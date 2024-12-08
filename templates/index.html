@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دكتور محمد - تحليل صور الأسنان</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            background: white;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+        .upload-area:hover {
+            border-color: #0d6efd;
+        }
+        .preview-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .preview-item {
+            position: relative;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .preview-image {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        .remove-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            line-height: 25px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0;
+        }
+        .results-container {
+            margin-top: 30px;
+        }
+        .result-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .score-bar {
+            height: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .score-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.3s ease;
+        }
+        .recommendation {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .error-message {
+            color: #dc3545;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+        .patient-form {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">دكتور محمد</h1>
+        <h3 class="text-center mb-4">تحليل صور الأسنان</h3>
+        
+        <div class="upload-area" id="dropZone">
+            <p>اسحب الصور هنا أو اضغط لاختيار الصور</p>
+            <input type="file" id="imageUpload" multiple accept=".png,.jpg,.jpeg,.gif,.bmp,.dcm" style="display: none;">
+            <button class="btn btn-primary" onclick="document.getElementById('imageUpload').click()">اختيار الصور</button>
+        </div>
+
+        <div id="previewContainer" class="preview-container"></div>
+        
+        <div class="text-center mt-3">
+            <button id="analyzeBtn" class="btn btn-success" style="display: none;">تحليل الصور</button>
+        </div>
+
+        <div id="loadingSpinner" class="loading">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">جاري التحليل...</span>
+            </div>
+            <p>جاري تحليل الصور...</p>
+        </div>
+
+        <div id="errorContainer"></div>
+        <div id="analysisResults" class="results-container"></div>
+
+        <!-- نموذج بيانات المريض -->
+        <div id="patientFormContainer" class="patient-form" style="display: none;">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title text-right">معلومات المريض</h5>
+                        <form id="patientForm" class="text-right">
+                            <div class="form-group">
+                                <label for="name">الاسم</label>
+                                <input type="text" class="form-control text-right" id="name" name="name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="age">العمر</label>
+                                <input type="number" class="form-control text-right" id="age" name="age" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="gender">الجنس</label>
+                                <select class="form-control text-right" id="gender" name="gender" required>
+                                    <option value="ذكر">ذكر</option>
+                                    <option value="أنثى">أنثى</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="phone">رقم الهاتف</label>
+                                <input type="tel" class="form-control text-right" id="phone" name="phone" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="email">البريد الإلكتروني (اختياري)</label>
+                                <input type="email" class="form-control text-right" id="email" name="email">
+                            </div>
+                            <div class="form-group">
+                                <label for="visit_reasons">سبب الزيارة</label>
+                                <select class="form-control text-right" id="visit_reasons" name="visit_reasons" multiple required>
+                                    <option value="ألم">ألم في الأسنان</option>
+                                    <option value="نزيف">نزيف اللثة</option>
+                                    <option value="حساسية">حساسية الأسنان</option>
+                                    <option value="تورم">تورم في اللثة</option>
+                                    <option value="رائحة">رائحة الفم الكريهة</option>
+                                    <option value="تغير لون">تغير لون الأسنان</option>
+                                    <option value="فحص">فحص دوري</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="symptoms">الأعراض الحالية</label>
+                                <select class="form-control text-right" id="symptoms" name="symptoms" multiple>
+                                    <option value="ألم">ألم عند الأكل/الشرب</option>
+                                    <option value="نزيف">نزيف عند التنظيف</option>
+                                    <option value="حساسية">حساسية للبارد/الساخن</option>
+                                    <option value="تورم">تورم في اللثة</option>
+                                    <option value="رائحة">رائحة كريهة</option>
+                                    <option value="تغير لون">تغير في لون الأسنان</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="medical_history">التاريخ الطبي (اختياري)</label>
+                                <select class="form-control text-right" id="medical_history" name="medical_history" multiple>
+                                    <option value="سكري">مرض السكري</option>
+                                    <option value="ضغط">ارتفاع ضغط الدم</option>
+                                    <option value="قلب">أمراض القلب</option>
+                                    <option value="حساسية">حساسية من أدوية معينة</option>
+                                    <option value="تدخين">تدخين</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">ملاحظات إضافية للتشخيص</label>
+                                <textarea class="form-control" name="diagnosis" rows="3"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">خطة العلاج المقترحة</label>
+                                <textarea class="form-control" name="treatment_plan" rows="3"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">ملاحظات مستقبلية</label>
+                                <textarea class="form-control" name="future_notes" rows="3"></textarea>
+                            </div>
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-primary">إنشاء التقرير</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // تهيئة Select2 للقوائم المتعددة
+            $('#visit_reasons, #symptoms, #medical_history').select2({
+                dir: "rtl",
+                language: "ar",
+                placeholder: "اختر من القائمة",
+                allowClear: true
+            });
+
+            let uploadedFiles = new Set();
+            let analysisResults = [];
+
+            // معالجة تحميل الصور
+            $('#imageUpload').on('change', function(e) {
+                let files = e.target.files;
+                let formData = new FormData();
+                let validFiles = true;
+
+                // إضافة الصور إلى FormData
+                for (let file of files) {
+                    if (!uploadedFiles.has(file.name)) {
+                        formData.append('images[]', file);
+                        uploadedFiles.add(file.name);
+                    }
+                }
+
+                // إضافة معلومات المريض إلى FormData
+                let patientData = new FormData($('#patientForm')[0]);
+                for (let [key, value] of patientData.entries()) {
+                    formData.append(key, value);
+                }
+
+                // معالجة القوائم المتعددة
+                let visitReasons = $('#visit_reasons').val();
+                let symptoms = $('#symptoms').val();
+                let medicalHistory = $('#medical_history').val();
+
+                formData.append('visit_reasons', visitReasons.join(','));
+                formData.append('symptoms', symptoms.join(','));
+                formData.append('medical_history', medicalHistory.join(','));
+
+                if (validFiles) {
+                    // إظهار مؤشر التحميل
+                    $('#loadingSpinner').show();
+
+                    // إرسال الطلب
+                    $.ajax({
+                        url: '/analyze',
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        success: function(response) {
+                            $('#loadingSpinner').hide();
+                            if (response.results) {
+                                analysisResults = response.results;
+                                displayResults(response.results);
+                                $('#patientFormContainer').show();
+                            }
+                        },
+                        error: function(xhr) {
+                            $('#loadingSpinner').hide();
+                            let error = xhr.responseJSON ? xhr.responseJSON.error : 'حدث خطأ أثناء تحليل الصور';
+                            alert(error);
+                        }
+                    });
+                }
+            });
+
+            // معالجة إنشاء التقرير
+            $('#patientForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                let formData = {
+                    name: $('#name').val(),
+                    age: $('#age').val(),
+                    gender: $('#gender').val(),
+                    phone: $('#phone').val(),
+                    email: $('#email').val(),
+                    visit_reasons: $('#visit_reasons').val(),
+                    symptoms: $('#symptoms').val(),
+                    medical_history: $('#medical_history').val(),
+                    diagnosis: $('[name="diagnosis"]').val(),
+                    treatment_plan: $('[name="treatment_plan"]').val(),
+                    future_notes: $('[name="future_notes"]').val(),
+                    analysis_results: analysisResults
+                };
+
+                $.ajax({
+                    url: '/generate_report',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    success: function(response) {
+                        if (response.success && response.report_url) {
+                            window.location.href = response.report_url;
+                        } else {
+                            alert('حدث خطأ أثناء إنشاء التقرير');
+                        }
+                    },
+                    error: function() {
+                        alert('حدث خطأ أثناء إنشاء التقرير');
+                    }
+                });
+            });
+
+            // عرض نتائج التحليل
+            function displayResults(results) {
+                let resultsHtml = '';
+                results.forEach(function(result) {
+                    resultsHtml += `
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">${result.filename}</h5>
+                            </div>
+                            <div class="card-body">
+                                <h6>درجات التقييم:</h6>
+                                <ul class="list-unstyled">
+                    `;
+
+                    for (let condition in result.scores) {
+                        let score = Math.round(result.scores[condition] * 100);
+                        let color = score > 70 ? 'success' : score > 40 ? 'warning' : 'danger';
+                        let conditionName = {
+                            'cavity': 'تسوس',
+                            'gum_inflammation': 'التهاب لثة',
+                            'plaque': 'تراكم البلاك',
+                            'erosion': 'تآكل المينا',
+                            'sensitivity': 'حساسية الأسنان',
+                            'overall_health': 'الصحة العامة'
+                        }[condition] || condition;
+
+                        resultsHtml += `
+                            <li class="mb-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>${conditionName}</span>
+                                    <span class="badge bg-${color}">${score}%</span>
+                                </div>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar bg-${color}" role="progressbar" style="width: ${score}%"></div>
+                                </div>
+                            </li>
+                        `;
+                    }
+
+                    resultsHtml += `
+                            </ul>
+                            <h6 class="mt-3">التوصيات:</h6>
+                            <ul>
+                    `;
+
+                    result.recommendations.forEach(function(recommendation) {
+                        resultsHtml += `<li>${recommendation}</li>`;
+                    });
+
+                    resultsHtml += `
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                });
+
+                $('#analysisResults').html(resultsHtml);
+            }
+        });
+    </script>
+</body>
+</html>
