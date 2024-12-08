@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقرير التشخيص الطبي - {{ patient.name }}</title>
+    <style>
+        @font-face {
+            font-family: 'Cairo';
+            src: url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+        }
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .report-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #0066cc;
+        }
+        
+        .clinic-info {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .patient-info {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .analysis-results {
+            margin-bottom: 30px;
+        }
+        
+        .condition-score {
+            margin-bottom: 15px;
+        }
+        
+        .score-bar {
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        
+        .score-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+        
+        .bg-success { background-color: #28a745; }
+        .bg-warning { background-color: #ffc107; }
+        .bg-danger { background-color: #dc3545; }
+        
+        .recommendations {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .recommendation-item {
+            margin-bottom: 10px;
+            padding-right: 20px;
+            position: relative;
+        }
+        
+        .recommendation-item:before {
+            content: "•";
+            position: absolute;
+            right: 0;
+            color: #0066cc;
+        }
+        
+        .diagnosis-section {
+            margin-bottom: 30px;
+        }
+        
+        .treatment-plan {
+            background-color: #e8f4ff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .future-notes {
+            background-color: #fff3cd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .report-footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 2px solid #0066cc;
+            font-size: 0.9em;
+        }
+        
+        h1, h2, h3, h4 {
+            color: #0066cc;
+            margin-bottom: 15px;
+        }
+        
+        .date {
+            color: #666;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="report-header">
+        <h1>تقرير التشخيص الطبي</h1>
+        <div class="clinic-info">
+            <h2>عيادة دكتور محمد</h2>
+            <p>أخصائي طب وجراحة الفم والأسنان</p>
+            <p>{{ report_date }}</p>
+        </div>
+    </div>
+
+    <div class="patient-info">
+        <h3>معلومات المريض</h3>
+        <table>
+            <tr>
+                <td><strong>الاسم:</strong></td>
+                <td>{{ patient.name }}</td>
+                <td><strong>العمر:</strong></td>
+                <td>{{ patient.age }}</td>
+            </tr>
+            <tr>
+                <td><strong>الجنس:</strong></td>
+                <td>{{ patient.gender }}</td>
+                <td><strong>رقم الهاتف:</strong></td>
+                <td>{{ patient.phone }}</td>
+            </tr>
+            {% if patient.email %}
+            <tr>
+                <td><strong>البريد الإلكتروني:</strong></td>
+                <td colspan="3">{{ patient.email }}</td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+
+    <div class="analysis-results">
+        <h3>نتائج التحليل</h3>
+        {% for result in analysis_results %}
+        <div class="result-section">
+            <h4>{{ result.filename }}</h4>
+            <p>نوع الصورة: {{ 'صورة أشعة' if result.image_type == 'xray' else 'صورة عادية' }}</p>
+            
+            {% for condition, score in result.scores.items() %}
+            <div class="condition-score">
+                {% set score_percentage = (score * 100) | round | int %}
+                {% set color_class = 'bg-success' if score_percentage > 70 else 'bg-warning' if score_percentage > 40 else 'bg-danger' %}
+                {% set condition_name = {
+                    'cavity': 'تسوس',
+                    'gum_inflammation': 'التهاب لثة',
+                    'plaque': 'تراكم البلاك',
+                    'erosion': 'تآكل المينا',
+                    'sensitivity': 'حساسية الأسنان',
+                    'overall_health': 'الصحة العامة'
+                }.get(condition, condition) %}
+                
+                <div class="d-flex justify-content-between">
+                    <span>{{ condition_name }}</span>
+                    <span>{{ score_percentage }}%</span>
+                </div>
+                <div class="score-bar">
+                    <div class="score-fill {{ color_class }}" style="width: {{ score_percentage }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <div class="recommendations">
+                <h4>التوصيات:</h4>
+                {% for recommendation in result.recommendations %}
+                <div class="recommendation-item">{{ recommendation }}</div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if patient.diagnosis %}
+    <div class="diagnosis-section">
+        <h3>ملاحظات إضافية للتشخيص</h3>
+        <p>{{ patient.diagnosis }}</p>
+    </div>
+    {% endif %}
+
+    {% if patient.treatment_plan %}
+    <div class="treatment-plan">
+        <h3>خطة العلاج المقترحة</h3>
+        <p>{{ patient.treatment_plan }}</p>
+    </div>
+    {% endif %}
+
+    {% if patient.future_notes %}
+    <div class="future-notes">
+        <h3>ملاحظات مستقبلية</h3>
+        <p>{{ patient.future_notes }}</p>
+    </div>
+    {% endif %}
+
+    <div class="report-footer">
+        <p>تم إنشاء هذا التقرير بواسطة نظام التحليل الذكي للأسنان</p>
+        <p>جميع الحقوق محفوظة {{ current_year }}</p>
+    </div>
+</body>
+</html>
